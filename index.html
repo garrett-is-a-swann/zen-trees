@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div id='container' style="margin:auto;">
+    <canvas id="myCanvas">
+        Your browser does not support the HTML5 canvas tag.
+    </canvas>
+</div>
+
+<script>
+
+var WIDTH = 700;
+var HEIGHT = 700;
+var initialX = WIDTH/2;
+var initialY = HEIGHT-20;
+var UNIT = 15;
+var container  = document.getElementById("container");
+container.style.height = HEIGHT+'px';
+container.style.width = WIDTH+'px';
+var c = document.getElementById("myCanvas");
+c.width = WIDTH;
+c.height = HEIGHT;
+var ctx = c.getContext("2d");
+var num_branches = 0;
+var zen = 0;
+
+
+function cos(A) {
+    return Math.cos(-Math.PI*(A/180));
+}
+
+function sin(A) {
+    return Math.sin(-Math.PI*(A/180));
+}
+
+function getAngle(curA, deviation) {
+    return (curA + Math.random()*(deviation*2)) - deviation;
+}
+
+
+function draw(x,y,A) {
+    if(x < 0 || x > c.width || y < 0 || y > c.height) {
+        return 
+    }
+    num_branches++;
+
+    setTimeout(()=> {
+        _draw(x,y,A);
+    }, 30);
+}
+
+function _draw(x,y,A) {
+    let nX = x + UNIT * cos(A);
+    let nY = y + UNIT * sin(A);
+
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(nX,nY);
+    ctx.stroke();
+
+    if(( Math.sinh(Math.abs(initialX - nX)/c.width ) + (initialY + 50 - nY)/c.height ) >= 1 ) {
+        num_branches--;
+        return;
+    }
+    
+    let n = Math.random();
+    
+    let ratio = 1.7*(nY)/c.height;
+    let straightPct = ratio * .6
+    let deviatePct = ratio * .8
+    let splitPct = ratio * .9
+
+    if(n <= straightPct) {
+        n = Math.random();
+        if(n <= .2) {
+            draw(nX, nY, getAngle(A, 15));
+        }
+        draw(nX, nY, A);
+    } else if(n <= deviatePct) { 
+        draw(nX, nY, getAngle(A, 15));
+    } else if(n <= splitPct) { 
+        if(Math.random() > .5) {
+            draw(nX, nY, (A + Math.random()*15));
+            draw(nX, nY, (A - Math.random()*15));
+        } else {
+            draw(nX, nY, (A - Math.random()*15));
+            draw(nX, nY, (A + Math.random()*15));
+        }
+    }
+    num_branches--;
+    return;
+}
+
+function clear() {
+    ctx.fillStyle="white";
+    ctx.fillRect(0,0,c.width,c.height);
+}
+
+function Tree() {
+    return new Promise( (res, _)=> {
+        draw(initialX, initialY, 90,0,0);
+
+        (function waitForCompletion() {
+            if (!num_branches) return setTimeout(()=> res(null), 1500);
+            setTimeout(waitForCompletion, 30);
+        })();
+    });
+}
+
+(async ()=> {
+    while(1){
+        clear();
+        await Tree();
+        console.log(`Tree${zen?'s':''}: ${++zen}`);
+    }
+})()
+
+
+</script>
+
+</body>
+</html>
+
