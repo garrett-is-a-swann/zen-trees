@@ -19,7 +19,7 @@
     }
 
     #tree-canvas {
-        z-index: -2
+        z-index: 1
     }
 
     #clouds {
@@ -141,7 +141,7 @@ function _draw(x,y,A) {
     
     let n = Math.random();
     
-    let ratio = 1.7*(nY)/700;
+    let ratio = 3*(nY)/(700 * (num_branches / 10));
     let angle_ratio = (90 - Math.abs(90 - A)) / 90;
     let straightPct = ratio * .6 * angle_ratio
     let deviatePct = ratio * .8 * angle_ratio
