@@ -151,7 +151,7 @@ function _draw(x,y,A) {
     
     let n = Math.random();
     
-    let ratio = 1.7*(nY)/700;
+    let ratio = 1.7*(nY)/(700 * (num_branches / 10));
     let angle_ratio = (90 - Math.abs(90 - A)) / 90;
     //console.log(ratio, 1.7,'*', nY, '/', tree_canvas.height)
     let straightPct = ratio * .6 * angle_ratio
