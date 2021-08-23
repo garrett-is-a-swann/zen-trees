@@ -19,12 +19,12 @@
     }
 
     #tree-canvas {
-        z-index: 1
+        z-index: -2
     }
 
     #clouds {
         background: linear-gradient(0deg, rgba(255,255,255,.2) 0%, rgba(0,0,0,.8) 100%);
-        z-index: 2;
+        z-index: -1;
         width:100%;
         height:100%;
     }
@@ -50,7 +50,8 @@ function drawLightningSegment(lightning_jar, x, y, A) {
     const new_jar = {
         branches: 1,
         unit: Math.random() * 7 + 8,
-        strokes: []
+        strokes: [],
+        created: new Date()
     };
     lightning_jar.push(new_jar);
 
@@ -59,7 +60,6 @@ function drawLightningSegment(lightning_jar, x, y, A) {
 
 function delayFn(fn, delay) {
     return (...props)=> setTimeout(()=> { 
-        //console.log(props)
             fn(...props)
         }, delay);
 }
@@ -89,25 +89,15 @@ function _drawLightningSegment(jar, x, y, A, distance_from_arc) {
     const nY = y - jar.unit * sin(A);
 
 
-    context.beginPath();
-    //context.strokeStyle = "#FFFFFF";
-    context.moveTo(x,y);
-    context.lineTo(nX,nY);
-    context.lineWidth = 3 / (10/10+distance_from_arc)
-    //console.log(distance_from_arc)
-
-    context.stroke();
-
     const ratio = (3 * (canvas.height-nY) /* */) / canvas.height;
     const splitPct = ratio * .1 / (distance_from_arc + 1); // As distance from main arc increases, chance to split decreases
     const straightPct = ratio * .6 / (distance_from_arc + 1);
     const deviatePct = ratio * .9 / (distance_from_arc + 1);
 
-    jar.strokes.push({x: x, nx: nX, y: y, ny: nY})
+    jar.strokes.push({x: x, nx: nX, y: y, ny: nY, distance_from_arc: distance_from_arc, created: new Date()})
     
     let n = Math.random();
 
-    //console.log(ratio, n, straightPct, deviatePct, splitPct)
     if (n <= splitPct) { 
         _drawLightningSegment(jar, nX, nY, (A - Math.random() * 15), distance_from_arc + 1);
         _drawLightningSegment(jar, nX, nY, (A + Math.random() * 15), distance_from_arc + 1);
@@ -153,7 +143,6 @@ function _draw(x,y,A) {
     
     let ratio = 1.7*(nY)/700;
     let angle_ratio = (90 - Math.abs(90 - A)) / 90;
-    //console.log(ratio, 1.7,'*', nY, '/', tree_canvas.height)
     let straightPct = ratio * .6 * angle_ratio
     let deviatePct = ratio * .8 * angle_ratio
     let splitPct = ratio * .9 * angle_ratio
@@ -232,7 +221,7 @@ function init() {
     })();
 
     (tryLightning = delayFn(() =>  {
-        if (Math.random() < .02) {
+        if (Math.random() < .015) {
             let maybeNegativeX = 1;
             if (Math.random() > .5) maybeNegativeX *= -1;
             const x_modifier = Math.random() * initialX * maybeNegativeX;
@@ -245,10 +234,34 @@ function init() {
         tryLightning()
     }, 30))();
 
+
+    const lightningAge = 1*1000; 
     (slowClearLightning = delayFn(() =>  {
         const context = getContext('lightning-canvas');
-        context.fillStyle = 'rgba(255, 255, 255, .03)';
-        context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+        
+        lightning_jar.filter(jar => {
+            // Delete if last lightning segment is older than maximum age
+            if (jar.branches == 0 && jar.strokes[jar.strokes.length - 1].created < new Date() - lightningAge) {
+                return false;
+            }
+            jar.strokes.filter(stroke => {
+                if (stroke.created < new Date() - lightningAge) {
+                    return false;
+                }
+                
+                alpha = 1 - (new Date() - stroke.created) / (lightningAge)
+                context.strokeStyle = `rgb(${170 + (75 * ( 1 / (stroke.distance_from_arc + 1)))}, ${170 + (75 * ( 1 / (stroke.distance_from_arc + 1)))}, 255, ${1 - ((new Date() - stroke.created) / (lightningAge))}`;
+                context.beginPath();
+                context.moveTo(stroke.x, stroke.y);
+                context.lineTo(stroke.nx, stroke.ny);
+                context.lineWidth = 3 * (1 / (stroke.distance_from_arc + 1));
+
+                context.stroke();
+                return true;
+            });
+            return true;
+        });
         slowClearLightning()
     }, 30))();
 }
