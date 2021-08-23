@@ -1,44 +1,37 @@
 <!DOCTYPE html>
 <html>
-<body>
+<body onload='init()'>
 
 <div id='container' style="margin:auto;">
-    <canvas id="myCanvas" style='z-index:1'>
-        Your browser does not support the HTML5 canvas tag.
-    </canvas>
+    <div id='clouds'></div>
 </div>
 
 <style>
+    body {
+        margin: 0;
+    }
     #container {
         position: relative;
     }
-    #container > canvas {
+    #container > * {
         position: absolute;
         left: 0;
     }
+
+    #tree-canvas {
+        z-index: 1
+    }
+
+    #clouds {
+        background: linear-gradient(0deg, rgba(255,255,255,.2) 0%, rgba(0,0,0,.8) 100%);
+        z-index: 2;
+        width:100%;
+        height:100%;
+    }
+
 </style>
 
 <script>
-
-var WIDTH = 700;
-var HEIGHT = 700;
-var initialX = WIDTH/2;
-var initialY = HEIGHT-20;
-var UNIT = 15;
-var container  = document.getElementById("container");
-container.style.height = HEIGHT+'px';
-container.style.width = WIDTH+'px';
-
-var tree_canvas = document.getElementById("myCanvas");
-tree_canvas.width = WIDTH;
-tree_canvas.height = HEIGHT;
-var tree_context = tree_canvas.getContext("2d");
-
-
-var num_branches = 0;
-var zen = 0;
-
-
 
 function cos(A) {
     return Math.cos(-Math.PI*(A/180));
@@ -52,9 +45,7 @@ function getAngle(curA, deviation) {
     return (curA + Math.random()*(deviation*2)) - deviation;
 }
 
-
-const lightning_jar = [] 
-function drawLightningSegment(x,y,A) {
+function drawLightningSegment(lightning_jar, x, y, A) {
 
     const new_jar = {
         branches: 1,
@@ -99,6 +90,7 @@ function _drawLightningSegment(jar, x, y, A, distance_from_arc) {
 
 
     context.beginPath();
+    //context.strokeStyle = "#FFFFFF";
     context.moveTo(x,y);
     context.lineTo(nX,nY);
     context.lineWidth = 3 / (10/10+distance_from_arc)
@@ -132,7 +124,7 @@ function _drawLightningSegment(jar, x, y, A, distance_from_arc) {
 _drawLightningSegment = delayFn(_drawLightningSegment, 20)
 
 function draw(x,y,A) {
-    if(x < 0 || x > tree_canvas.width || y < 0 || y > tree_canvas.height) {
+    if(x < 0 || x > WIDTH || y < 0 || y > HEIGHT) {
         return 
     }
     num_branches++;
@@ -146,27 +138,29 @@ function _draw(x,y,A) {
     let nX = x + UNIT * cos(A);
     let nY = y + UNIT * sin(A);
 
-    tree_context.beginPath();
-    tree_context.moveTo(x,y);
-    tree_context.lineTo(nX,nY);
-    tree_context.stroke();
+    context = getContext('tree-canvas')
+    context.beginPath();
+    context.moveTo(x,y);
+    context.lineTo(nX,nY);
+    context.stroke();
 
-    if(( Math.sinh(Math.abs(initialX - nX)/tree_canvas.width ) + (initialY + 50 - nY)/tree_canvas.height ) >= 1 ) {
+    if(( Math.sinh(Math.abs(initialX - nX)/WIDTH ) + (initialY + 50 - nY)/HEIGHT ) >= 1 ) {
         num_branches--;
         return;
     }
     
     let n = Math.random();
     
-    let ratio = 1.7*(nY)/tree_canvas.height;
+    let ratio = 1.7*(nY)/700;
+    let angle_ratio = (90 - Math.abs(90 - A)) / 90;
     //console.log(ratio, 1.7,'*', nY, '/', tree_canvas.height)
-    let straightPct = ratio * .6
-    let deviatePct = ratio * .8
-    let splitPct = ratio * .9
+    let straightPct = ratio * .6 * angle_ratio
+    let deviatePct = ratio * .8 * angle_ratio
+    let splitPct = ratio * .9 * angle_ratio
 
     if(n <= straightPct) {
         n = Math.random();
-        if(n <= .2) {
+        if(n <= .1) {
             draw(nX, nY, getAngle(A, 15));
         }
         draw(nX, nY, A);
@@ -187,6 +181,13 @@ function _draw(x,y,A) {
 
 function clear(context) {
     context.clearRect(0,0,WIDTH,HEIGHT);
+
+    const gradiant = context.createLinearGradient(0, WIDTH/2, 0, HEIGHT/2);
+    gradiant.addColorStop(0, "black");
+    gradiant.addColorStop(1, "white");
+
+    // Fill with gradient
+    context.fillStyle = gradiant;
 }
 
 function Tree() {
@@ -200,37 +201,57 @@ function Tree() {
     });
 }
 
+let WIDTH;
+let HEIGHT;
+let UNIT;
 
-(async ()=> {
-    while(1) {
-        clear(tree_context);
-        await Tree();
-        //console.log(`Tree${zen?'s':''}: ${++zen}`);
-    }
-})();
+let initialX;
+let initialY;
+let num_branches = 0;
+function init() {
+    WIDTH = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+    HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+    initialX = WIDTH/2;
+    initialY = HEIGHT-20;
+    UNIT = 15;
+    const container  = document.getElementById("container");
+    container.style.height = HEIGHT+'px';
+    container.style.width = WIDTH+'px';
 
-(tryLightning = delayFn(() =>  {
-    console.log('Hi')
-    if (Math.random() < .02) {
-        let maybeNegativeX = 1;
-        if (Math.random() > .5) maybeNegativeX *= -1;
-        const x_modifier = Math.random() * initialX * maybeNegativeX;
-        console.log('x:', x_modifier, initialX);
+    const tree_context = getContext('tree-canvas');
 
-        let maybeNegativeAngle = 1;
-        if (Math.random() > .5) maybeNegativeAngle *= -1;
-        
-        drawLightningSegment(initialX + x_modifier, 0, 90 + maybeNegativeX * Math.random() * 15);
-    }
-    tryLightning()
-}, 30))();
+    let zen = 0;
 
-(slowClearLightning = delayFn(() =>  {
-    const context = getContext('lightning-canvas');
-    context.fillStyle = 'rgba(255, 255, 255, .03)';
-    context.fillRect(0, 0, WIDTH, HEIGHT);
-    slowClearLightning()
-}, 30))();
+    const lightning_jar = [];
+    (async ()=> {
+        while(1) {
+            clear(tree_context);
+            await Tree();
+            console.log(`Tree${zen?'s':''}: ${++zen}`);
+        }
+    })();
+
+    (tryLightning = delayFn(() =>  {
+        if (Math.random() < .02) {
+            let maybeNegativeX = 1;
+            if (Math.random() > .5) maybeNegativeX *= -1;
+            const x_modifier = Math.random() * initialX * maybeNegativeX;
+
+            let maybeNegativeAngle = 1;
+            if (Math.random() > .5) maybeNegativeAngle *= -1;
+            
+            drawLightningSegment(lightning_jar, initialX + x_modifier, 0, 90 + maybeNegativeX * Math.random() * 15);
+        }
+        tryLightning()
+    }, 30))();
+
+    (slowClearLightning = delayFn(() =>  {
+        const context = getContext('lightning-canvas');
+        context.fillStyle = 'rgba(255, 255, 255, .03)';
+        context.fillRect(0, 0, WIDTH, HEIGHT);
+        slowClearLightning()
+    }, 30))();
+}
 
 
 </script>
