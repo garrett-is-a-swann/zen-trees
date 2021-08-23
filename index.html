@@ -117,7 +117,8 @@ function draw(x,y,A) {
     if(x < 0 || x > WIDTH || y < 0 || y > HEIGHT) {
         return 
     }
-    num_branches++;
+    ++num_branches;
+    ++total_branches;
 
     setTimeout(()=> {
         _draw(x,y,A);
@@ -141,15 +142,15 @@ function _draw(x,y,A) {
     
     let n = Math.random();
     
-    let ratio = 3*(nY)/(700 * (num_branches / 10));
+    let ratio = 1.7*(nY)/(total_branches * (3 + 10*Math.random()));
     let angle_ratio = (90 - Math.abs(90 - A)) / 90;
-    let straightPct = ratio * .6 * angle_ratio
-    let deviatePct = ratio * .8 * angle_ratio
+    let straightPct = ratio * .4 * angle_ratio
+    let deviatePct = ratio * .5 * angle_ratio
     let splitPct = ratio * .9 * angle_ratio
 
     if(n <= straightPct) {
         n = Math.random();
-        if(n <= .1) {
+        if(n <= .2) {
             draw(nX, nY, getAngle(A, 15));
         }
         draw(nX, nY, A);
@@ -181,6 +182,7 @@ function clear(context) {
 
 function Tree() {
     return new Promise( (res, _)=> {
+        total_branches = 0;
         draw(initialX, initialY, 90,0,0);
 
         (function waitForCompletion() {
@@ -197,6 +199,7 @@ let UNIT;
 let initialX;
 let initialY;
 let num_branches = 0;
+let total_branches = 0;
 function init() {
     WIDTH = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
     HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
