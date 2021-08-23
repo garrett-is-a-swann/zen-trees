@@ -46,7 +46,6 @@ function getAngle(curA, deviation) {
 }
 
 function drawLightningSegment(lightning_jar, x, y, A) {
-
     const new_jar = {
         branches: 1,
         unit: Math.random() * 7 + 8,
@@ -232,7 +231,7 @@ function init() {
             let maybeNegativeAngle = 1;
             if (Math.random() > .5) maybeNegativeAngle *= -1;
             
-            drawLightningSegment(lightning_jar, initialX + x_modifier, 0, 90 + maybeNegativeX * Math.random() * 15);
+            drawLightningSegment(lightning_jar, initialX + x_modifier, 5, 90 + maybeNegativeX * Math.random() * 15);
         }
         tryLightning()
     }, 30))();
@@ -244,7 +243,7 @@ function init() {
         context.clearRect(0, 0, WIDTH, HEIGHT);
         lightning_jar = lightning_jar.filter((jar, index) => {
             // Delete lightning jar if no segments remain
-            if (!jar.strokes.length) {
+            if (!jar.strokes.length && jar.created < new Date() - lightningAge) {
                 return false;
             }
             jar.strokes = jar.strokes.filter(stroke => {
