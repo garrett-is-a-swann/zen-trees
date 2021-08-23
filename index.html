@@ -211,7 +211,7 @@ function init() {
 
     let zen = 0;
 
-    const lightning_jar = [];
+    let lightning_jar = [];
     (async ()=> {
         while(1) {
             clear(tree_context);
@@ -239,18 +239,17 @@ function init() {
     (slowClearLightning = delayFn(() =>  {
         const context = getContext('lightning-canvas');
         context.clearRect(0, 0, WIDTH, HEIGHT);
-        
-        lightning_jar.filter(jar => {
-            // Delete if last lightning segment is older than maximum age
-            if (jar.branches == 0 && jar.strokes[jar.strokes.length - 1].created < new Date() - lightningAge) {
+        lightning_jar = lightning_jar.filter((jar, index) => {
+            // Delete lightning jar if no segments remain
+            if (!jar.strokes.length) {
                 return false;
             }
-            jar.strokes.filter(stroke => {
+            jar.strokes = jar.strokes.filter(stroke => {
+                // Delete if last lightning segment is older than maximum age
                 if (stroke.created < new Date() - lightningAge) {
                     return false;
                 }
                 
-                alpha = 1 - (new Date() - stroke.created) / (lightningAge)
                 context.strokeStyle = `rgb(${170 + (75 * ( 1 / (stroke.distance_from_arc + 1)))}, ${170 + (75 * ( 1 / (stroke.distance_from_arc + 1)))}, 255, ${1 - ((new Date() - stroke.created) / (lightningAge))}`;
                 context.beginPath();
                 context.moveTo(stroke.x, stroke.y);
