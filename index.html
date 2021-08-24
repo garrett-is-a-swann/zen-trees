@@ -84,8 +84,8 @@ function _drawLightningSegment(jar, x, y, A, distance_from_arc) {
 
     ++jar.branches;
 
-    const nX = x + jar.unit * cos(A);
-    const nY = y - jar.unit * sin(A);
+    const nX = x + jar.unit * cos(A) / (distance_from_arc + 1);
+    const nY = y - jar.unit * sin(A) / (distance_from_arc + 1);
 
 
     const ratio = (3 * (canvas.height-nY) /* */) / canvas.height;
@@ -186,7 +186,7 @@ function Tree() {
         draw(initialX, initialY, 90,0,0);
 
         (function waitForCompletion() {
-            if (!num_branches) return setTimeout(()=> res(null), 1500);
+            if (!num_branches) return setTimeout(()=> res(null), 2500);
             setTimeout(waitForCompletion, 30);
         })();
     });
