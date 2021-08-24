@@ -125,8 +125,9 @@ function draw(x,y,A) {
 }
 
 function _draw(x,y,A) {
-    let nX = x + UNIT * cos(A);
-    let nY = y + UNIT * sin(A);
+    const unit = (Math.random() * 20 + 5)
+    let nX = x + unit * cos(A);
+    let nY = y + unit * sin(A);
 
     context = getContext('tree-canvas')
     context.beginPath();
@@ -171,12 +172,12 @@ function _draw(x,y,A) {
 function clear(context) {
     context.clearRect(0,0,WIDTH,HEIGHT);
 
-    const gradiant = context.createLinearGradient(0, WIDTH/2, 0, HEIGHT/2);
-    gradiant.addColorStop(0, "black");
-    gradiant.addColorStop(1, "white");
+    const gradient = context.createLinearGradient(0, WIDTH/2, 0, HEIGHT/2);
+    gradient.addColorStop(0, "black");
+    gradient.addColorStop(1, "white");
 
     // Fill with gradient
-    context.fillStyle = gradiant;
+    context.fillStyle = gradient;
 }
 
 function Tree() {
@@ -193,7 +194,6 @@ function Tree() {
 
 let WIDTH;
 let HEIGHT;
-let UNIT;
 
 let initialX;
 let initialY;
@@ -204,7 +204,6 @@ function init() {
     HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
     initialX = WIDTH/2;
     initialY = HEIGHT-20;
-    UNIT = 15;
     const container  = document.getElementById("container");
     container.style.height = HEIGHT+'px';
     container.style.width = WIDTH+'px';
@@ -231,7 +230,7 @@ function init() {
             let maybeNegativeAngle = 1;
             if (Math.random() > .5) maybeNegativeAngle *= -1;
             
-            drawLightningSegment(lightning_jar, initialX + x_modifier, 5, 90 + maybeNegativeX * Math.random() * 15);
+            drawLightningSegment(lightning_jar, initialX + x_modifier, 0, 90 + maybeNegativeX * Math.random() * 15);
         }
         tryLightning()
     }, 30))();
