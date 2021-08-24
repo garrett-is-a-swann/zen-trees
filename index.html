@@ -237,7 +237,6 @@ function init() {
 
     let rain_stick = [];
     let last_angle = 90;
-    let rain_unit = 15;
     (tryRain = delayFn(() => {
         let next_rain = 0;
         let maybeNegativeAngle = 1;
@@ -255,20 +254,21 @@ function init() {
                 break;
             }
             let y_start = Math.random() * 25;
-            let rain_unit = Math.random() * 10;
+            let rain_unit = Math.random() * 10 + 5;
             let rain_angle = (maybeNegativeAngle * Math.random() * 10) + last_angle;
             const rain = {
                 x1: next_rain,
                 y1: y_start,
                 x2: next_rain + cos(rain_angle) * rain_unit,
                 y2: y_start + sin(rain_angle) * rain_unit,
+                unit: rain_unit,
                 angle: rain_angle,
                 stroke: Math.random() * 3,
             };
             rain_stick.push(rain);
         }
         tryRain();
-    }, 50))();
+    }, 75))();
 
     const lightningAge = 1*1000; 
     (drawLoop = delayFn(() =>  {
@@ -323,8 +323,8 @@ function init() {
 
             rain.x1 = rain.x2;
             rain.y1 = rain.y2;
-            rain.x2 = rain.x1 + cos(rain.angle) * rain_unit;
-            rain.y2 = rain.y1 - sin(rain.angle) * rain_unit;
+            rain.x2 = rain.x1 + cos(rain.angle) * rain.unit;
+            rain.y2 = rain.y1 - sin(rain.angle) * rain.unit * 1.5;
 
             if (rain.x1 <= 0) {
                 rain.x1 += WIDTH
