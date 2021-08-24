@@ -203,7 +203,7 @@ function init() {
     WIDTH = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
     HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
     initialX = WIDTH/2;
-    initialY = HEIGHT-20;
+    initialY = HEIGHT;
     const container  = document.getElementById("container");
     container.style.height = HEIGHT+'px';
     container.style.width = WIDTH+'px';
@@ -235,9 +235,43 @@ function init() {
         tryLightning()
     }, 30))();
 
+    let rain_stick = [];
+    let last_angle = 90;
+    let rain_unit = 15;
+    (tryRain = delayFn(() => {
+        let next_rain = 0;
+        let maybeNegativeAngle = 1;
+        if (Math.random() > .5) maybeNegativeAngle *= -1;
+        last_angle += maybeNegativeAngle * Math.random() * 3
+        if (last_angle > 135) {
+            last_angle = 135;
+        }
+        if (last_angle < 45) {
+            last_angle = 45;
+        }
+        while (1) {
+            next_rain += 50 * Math.random() + 5;
+            if (next_rain >= WIDTH) {
+                break;
+            }
+            let y_start = Math.random() * 25;
+            let rain_unit = Math.random() * 10;
+            let rain_angle = (maybeNegativeAngle * Math.random() * 10) + last_angle;
+            const rain = {
+                x1: next_rain,
+                y1: y_start,
+                x2: next_rain + cos(rain_angle) * rain_unit,
+                y2: y_start + sin(rain_angle) * rain_unit,
+                angle: rain_angle,
+                stroke: Math.random() * 3,
+            };
+            rain_stick.push(rain);
+        }
+        tryRain();
+    }, 50))();
 
     const lightningAge = 1*1000; 
-    (slowClearLightning = delayFn(() =>  {
+    (drawLoop = delayFn(() =>  {
         const context = getContext('lightning-canvas');
         context.clearRect(0, 0, WIDTH, HEIGHT);
         lightning_jar = lightning_jar.filter((jar, index) => {
@@ -262,7 +296,49 @@ function init() {
             });
             return true;
         });
-        slowClearLightning()
+        rain_stick = rain_stick.filter((rain, index) => {
+            if (rain.y1 >= HEIGHT) {
+                return false;
+            }
+            const context = getContext('lightning-canvas');
+            context.strokeStyle = `rgb(0, 0, 0, ${rain.stroke / 9}`;
+            context.lineWidth = rain.stroke;
+            context.beginPath();
+            context.moveTo(rain.x1, rain.y1);
+            context.lineTo(rain.x2, rain.y2);
+            context.stroke();
+            
+            if (rain.x2 >= WIDTH) {
+                context.beginPath();
+                context.moveTo(rain.x1 - WIDTH, rain.y1);
+                context.lineTo(rain.x2 - WIDTH, rain.y2);
+                context.stroke();
+            }
+            if (rain.x1 <= 0) {
+                context.beginPath();
+                context.moveTo(rain.x1 + WIDTH, rain.y1);
+                context.lineTo(rain.x2 + WIDTH, rain.y2);
+                context.stroke();
+            }
+
+            rain.x1 = rain.x2;
+            rain.y1 = rain.y2;
+            rain.x2 = rain.x1 + cos(rain.angle) * rain_unit;
+            rain.y2 = rain.y1 - sin(rain.angle) * rain_unit;
+
+            if (rain.x1 <= 0) {
+                rain.x1 += WIDTH
+                rain.x2 += WIDTH
+            }
+
+            if (rain.x1 >= WIDTH) {
+                rain.x1 -= WIDTH
+                rain.x2 -= WIDTH
+            }
+
+            return true;
+        });
+        drawLoop()
     }, 30))();
 }
 
