@@ -242,11 +242,11 @@ function init() {
         let maybeNegativeAngle = 1;
         if (Math.random() > .5) maybeNegativeAngle *= -1;
         last_angle += maybeNegativeAngle * Math.random() * 3
-        if (last_angle > 135) {
-            last_angle = 135;
+        if (last_angle > 150) {
+            last_angle = 150;
         }
-        if (last_angle < 45) {
-            last_angle = 45;
+        if (last_angle < 30) {
+            last_angle = 30;
         }
         while (1) {
             next_rain += 50 * Math.random() + 5;
@@ -296,11 +296,16 @@ function init() {
             });
             return true;
         });
+        drawLoop()
+    }, 30))();
+
+    (rainDrawLoop = delayFn(() => {
+        const context = getContext('rain-canvas');
+        context.clearRect(0,0,WIDTH, HEIGHT);
         rain_stick = rain_stick.filter((rain, index) => {
             if (rain.y1 >= HEIGHT) {
                 return false;
             }
-            const context = getContext('lightning-canvas');
             context.strokeStyle = `rgb(0, 0, 0, ${rain.stroke / 9}`;
             context.lineWidth = rain.stroke;
             context.beginPath();
@@ -324,7 +329,7 @@ function init() {
             rain.x1 = rain.x2;
             rain.y1 = rain.y2;
             rain.x2 = rain.x1 + cos(rain.angle) * rain.unit;
-            rain.y2 = rain.y1 - sin(rain.angle) * rain.unit * 1.5;
+            rain.y2 = rain.y1 - sin(rain.angle) * rain.unit * 3;
 
             if (rain.x1 <= 0) {
                 rain.x1 += WIDTH
@@ -338,7 +343,7 @@ function init() {
 
             return true;
         });
-        drawLoop()
+        rainDrawLoop();
     }, 30))();
 }
 
