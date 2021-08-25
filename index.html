@@ -24,9 +24,26 @@
 
     #clouds {
         background: linear-gradient(0deg, rgba(255,255,255,.2) 0%, rgba(0,0,0,.8) 100%);
-        z-index: -1;
+        z-index: -6;
         width:100%;
         height:100%;
+    }
+
+
+    #background-lightning-canvas {
+        z-index: -5;
+    }
+    #background-mountain-canvas {
+        z-index: -5;
+    }
+    #midground-lightning-canvas {
+        z-index: -3;
+    }
+    #foreground-mountain-canvas {
+        z-index: -2;
+    }
+    #foreground-lightning-canvas {
+        z-index: -1
     }
 
 </style>
@@ -45,12 +62,17 @@ function getAngle(curA, deviation) {
     return (curA + Math.random()*(deviation*2)) - deviation;
 }
 
-function drawLightningSegment(lightning_jar, x, y, A) {
+function randInt(max) {
+    return Math.floor(Math.random() * max)
+}
+
+function drawLightningSegment(lightning_jar, x, y, A, canvas) {
     const new_jar = {
         branches: 1,
         unit: Math.random() * 7 + 8,
         strokes: [],
-        created: new Date()
+        created: new Date(),
+        canvas: canvas
     };
     lightning_jar.push(new_jar);
 
@@ -80,8 +102,6 @@ function _drawLightningSegment(jar, x, y, A, distance_from_arc) {
         --jar.branches;
         return 
     }
-    const context = getContext('lightning-canvas');
-
     ++jar.branches;
 
     const nX = x + jar.unit * cos(A) / (distance_from_arc + 1);
@@ -192,6 +212,35 @@ function Tree() {
     });
 }
 
+function buildMountainRange(mountain_range, num_mountains, based_around) {
+    for (let i = 0; i < num_mountains; ++i) {
+        let maybeNegative = 1;
+        if (Math.random() > .5) maybeNegative *= -1;
+
+        mountain_range.push({
+            x: i*num_mountains,
+            y: maybeNegative * Math.random() * HEIGHT / 100 + based_around,
+            changeRate: Math.random() * maybeNegative
+        });
+    }
+}
+
+function drawMountainRange(canvas_id, mountain_range, fill_style) {
+    const context = getContext(canvas_id, );
+    context.clearRect(0, 0, WIDTH, HEIGHT);
+    const region = new Path2D();
+    region.moveTo(0, HEIGHT);
+    mountain_range.map((mountain, index) => {
+        region.lineTo(mountain.x, mountain.y);
+        region.lineTo(mountain.x, mountain.y);
+    });
+    region.lineTo(WIDTH, HEIGHT);
+    region.lineTo(0, HEIGHT);
+    region.closePath();
+    context.fillStyle = fill_style;
+    context.fill(region);
+}
+
 let WIDTH;
 let HEIGHT;
 
@@ -212,7 +261,6 @@ function init() {
 
     let zen = 0;
 
-    let lightning_jar = [];
     (async ()=> {
         while(1) {
             clear(tree_context);
@@ -221,20 +269,6 @@ function init() {
         }
     })();
 
-    (tryLightning = delayFn(() =>  {
-        if (Math.random() < .015) {
-            let maybeNegativeX = 1;
-            if (Math.random() > .5) maybeNegativeX *= -1;
-            const x_modifier = Math.random() * initialX * maybeNegativeX;
-
-            let maybeNegativeAngle = 1;
-            if (Math.random() > .5) maybeNegativeAngle *= -1;
-            
-            drawLightningSegment(lightning_jar, initialX + x_modifier, 0, 90 + maybeNegativeX * Math.random() * 15);
-        }
-        tryLightning()
-    }, 30))();
-
     let rain_stick = [];
     let last_angle = 90;
     (tryRain = delayFn(() => {
@@ -242,11 +276,11 @@ function init() {
         let maybeNegativeAngle = 1;
         if (Math.random() > .5) maybeNegativeAngle *= -1;
         last_angle += maybeNegativeAngle * Math.random() * 3
-        if (last_angle > 135) {
-            last_angle = 135;
+        if (last_angle > 150) {
+            last_angle = 150;
         }
-        if (last_angle < 45) {
-            last_angle = 45;
+        if (last_angle < 30) {
+            last_angle = 30;
         }
         while (1) {
             next_rain += 50 * Math.random() + 5;
@@ -270,21 +304,96 @@ function init() {
         tryRain();
     }, 75))();
 
+    let background_mountain_range = []
+    let foreground_mountain_range = []
+
+    buildMountainRange(background_mountain_range, WIDTH/15, HEIGHT * 2 / 3);
+    buildMountainRange(foreground_mountain_range, WIDTH/10, HEIGHT * 4 / 5);
+
+    (moveMountains = delayFn(() => {
+        drawMountainRange('background-mountain-canvas', background_mountain_range, '#555');
+        drawMountainRange('foreground-mountain-canvas', foreground_mountain_range, '#444');
+
+        background_mountain_range = background_mountain_range.map((mountain, index) => {
+            let maybeNegative = 1;
+            if (Math.random() > .5) maybeNegative *= -1;
+            
+            mountain.changeRate += maybeNegative * Math.random();
+            if (mountain.changeRate < -10) {
+                mountain.changeRate = -10;
+            }
+            if (mountain.changeRate > 10) {
+                mountain.changeRate = 10;
+            }
+
+            mountain.y += mountain.changeRate / 2;
+
+            if (mountain.y > HEIGHT * 3 / 5) {
+                mountain.changeRate -= Math.random() / 2;
+            }
+            if (mountain.y < HEIGHT * 3 / 5) {
+                mountain.changeRate += Math.random() / 2;
+            }
+            return mountain;
+        });
+        foreground_mountain_range = foreground_mountain_range.map((mountain, index) => {
+            let maybeNegative = 1;
+            if (Math.random() > .5) maybeNegative *= -1;
+            
+            mountain.changeRate += maybeNegative * Math.random();
+            if (mountain.changeRate < -10) {
+                mountain.changeRate = -10;
+            }
+            if (mountain.changeRate > 10) {
+                mountain.changeRate = 10;
+            }
+
+            mountain.y += mountain.changeRate / 3;
+
+            if (mountain.y > HEIGHT * 8.5 / 10) {
+                mountain.changeRate -= Math.random() / 2;
+            }
+            if (mountain.y < HEIGHT * 7.5 / 10) {
+                mountain.changeRate += Math.random() / 2;
+            }
+            return mountain;
+        });
+        moveMountains();
+    }, 50))();
+
+
+    let lightning_jar = [];
+    const lightning_canvases = ['foreground-lightning-canvas', 'midground-lightning-canvas', 'background-lightning-canvas'];
+    (tryLightning = delayFn(() =>  {
+        if (Math.random() < .015) {
+            let maybeNegativeX = 1;
+            if (Math.random() > .5) maybeNegativeX *= -1;
+            const x_modifier = Math.random() * initialX * maybeNegativeX;
+
+            let maybeNegativeAngle = 1;
+            if (Math.random() > .5) maybeNegativeAngle *= -1;
+
+            drawLightningSegment(lightning_jar, initialX + x_modifier, 0, 90 + maybeNegativeX * Math.random() * 15, lightning_canvases[randInt(lightning_canvases.length)]);
+        }
+        tryLightning()
+    }, 30))();
+
     const lightningAge = 1*1000; 
-    (drawLoop = delayFn(() =>  {
-        const context = getContext('lightning-canvas');
-        context.clearRect(0, 0, WIDTH, HEIGHT);
+    (lightningDrawLoop = delayFn(() =>  {
+        lightning_canvases.map((canvas) =>
+            getContext(canvas).clearRect(0, 0, WIDTH, HEIGHT)
+        );
         lightning_jar = lightning_jar.filter((jar, index) => {
             // Delete lightning jar if no segments remain
             if (!jar.strokes.length && jar.created < new Date() - lightningAge) {
                 return false;
             }
+            const context = getContext(jar.canvas);
             jar.strokes = jar.strokes.filter(stroke => {
                 // Delete if last lightning segment is older than maximum age
                 if (stroke.created < new Date() - lightningAge) {
                     return false;
                 }
-                
                 context.strokeStyle = `rgb(${170 + (75 * ( 1 / (stroke.distance_from_arc + 1)))}, ${170 + (75 * ( 1 / (stroke.distance_from_arc + 1)))}, 255, ${1 - ((new Date() - stroke.created) / (lightningAge))}`;
                 context.beginPath();
                 context.moveTo(stroke.x, stroke.y);
@@ -296,11 +405,16 @@ function init() {
             });
             return true;
         });
+        lightningDrawLoop()
+    }, 30))();
+
+    (rainDrawLoop = delayFn(() => {
+        const context = getContext('rain-canvas');
+        context.clearRect(0,0,WIDTH, HEIGHT);
         rain_stick = rain_stick.filter((rain, index) => {
             if (rain.y1 >= HEIGHT) {
                 return false;
             }
-            const context = getContext('lightning-canvas');
             context.strokeStyle = `rgb(0, 0, 0, ${rain.stroke / 9}`;
             context.lineWidth = rain.stroke;
             context.beginPath();
@@ -324,7 +438,7 @@ function init() {
             rain.x1 = rain.x2;
             rain.y1 = rain.y2;
             rain.x2 = rain.x1 + cos(rain.angle) * rain.unit;
-            rain.y2 = rain.y1 - sin(rain.angle) * rain.unit * 1.5;
+            rain.y2 = rain.y1 - sin(rain.angle) * rain.unit * 3;
 
             if (rain.x1 <= 0) {
                 rain.x1 += WIDTH
@@ -338,7 +452,7 @@ function init() {
 
             return true;
         });
-        drawLoop()
+        rainDrawLoop();
     }, 30))();
 }
 
