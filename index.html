@@ -326,12 +326,12 @@ function init() {
                 mountain.changeRate = 10;
             }
 
-            mountain.y += mountain.changeRate / 2;
+            mountain.y += mountain.changeRate / 6;
 
-            if (mountain.y > HEIGHT * 3 / 5) {
+            if (mountain.y > HEIGHT * 2.5 / 5) {
                 mountain.changeRate -= Math.random() / 2;
             }
-            if (mountain.y < HEIGHT * 3 / 5) {
+            if (mountain.y < HEIGHT * 3.5 / 5) {
                 mountain.changeRate += Math.random() / 2;
             }
             return mountain;
@@ -348,7 +348,7 @@ function init() {
                 mountain.changeRate = 10;
             }
 
-            mountain.y += mountain.changeRate / 3;
+            mountain.y += mountain.changeRate / 8;
 
             if (mountain.y > HEIGHT * 8.5 / 10) {
                 mountain.changeRate -= Math.random() / 2;
@@ -359,7 +359,7 @@ function init() {
             return mountain;
         });
         moveMountains();
-    }, 50))();
+    }, 100))();
 
 
     let lightning_jar = [];
