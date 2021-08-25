@@ -213,12 +213,12 @@ function Tree() {
 }
 
 function buildMountainRange(mountain_range, num_mountains, based_around) {
-    for (let i = 0; i < num_mountains; ++i) {
+    for (let i = 0; i < Math.ceil(num_mountains); ++i) {
         let maybeNegative = 1;
         if (Math.random() > .5) maybeNegative *= -1;
 
         mountain_range.push({
-            x: i*num_mountains,
+            x: i*(WIDTH/num_mountains),
             y: maybeNegative * Math.random() * HEIGHT / 100 + based_around,
             changeRate: Math.random() * maybeNegative
         });
@@ -226,19 +226,51 @@ function buildMountainRange(mountain_range, num_mountains, based_around) {
 }
 
 function drawMountainRange(canvas_id, mountain_range, fill_style) {
-    const context = getContext(canvas_id, );
+    const context = getContext(canvas_id);
     context.clearRect(0, 0, WIDTH, HEIGHT);
     const region = new Path2D();
     region.moveTo(0, HEIGHT);
+    region.lineTo(mountain_range[mountain_range.length - 1].x - WIDTH, mountain_range[mountain_range.length - 1].y);
     mountain_range.map((mountain, index) => {
         region.lineTo(mountain.x, mountain.y);
-        region.lineTo(mountain.x, mountain.y);
     });
-    region.lineTo(WIDTH, HEIGHT);
+    region.lineTo(mountain_range[0].x + WIDTH, mountain_range[0].y);
+    region.lineTo(mountain_range[0].x + WIDTH, HEIGHT);
     region.lineTo(0, HEIGHT);
     region.closePath();
     context.fillStyle = fill_style;
     context.fill(region);
+}
+
+
+function updateMountainRange(mountain_range, mountain_shift_rate) {
+    for(let i = 0; i < mountain_range.length; ++i) {
+        let mountain = mountain_range[i];
+        let maybeNegative = 1;
+        if (Math.random() > .5) maybeNegative *= -1;
+        
+        mountain.changeRate += maybeNegative * Math.random();
+        if (mountain.changeRate < -10) {
+            mountain.changeRate = -10;
+        }
+        if (mountain.changeRate > 10) {
+            mountain.changeRate = 10;
+        }
+
+        mountain.y += mountain.changeRate / mountain_range.change_divisor;
+
+        if (mountain.y > HEIGHT * mountain_range.upper_bounds) {
+            mountain.changeRate -= Math.random() / mountain_range.bounds_divisor;
+        }
+        if (mountain.y < HEIGHT * mountain_range.lower_bounds) {
+            mountain.changeRate += Math.random() / mountain_range.bounds_divisor;
+        }
+        mountain.x += mountain_shift_rate;
+        if (mountain.x > WIDTH) {
+            mountain.x -= WIDTH;
+            mountain_range.unshift(mountain_range.pop());
+        }
+    };
 }
 
 let WIDTH;
@@ -307,57 +339,36 @@ function init() {
     let background_mountain_range = []
     let foreground_mountain_range = []
 
-    buildMountainRange(background_mountain_range, WIDTH/15, HEIGHT * 2 / 3);
-    buildMountainRange(foreground_mountain_range, WIDTH/10, HEIGHT * 4 / 5);
+    background_mountain_range.upper_bounds = 2.5/5;
+    background_mountain_range.lower_bounds = 3.5/5;
+    background_mountain_range.change_divisor = 6;
+    background_mountain_range.bounds_divisor = 2;
 
+    foreground_mountain_range.upper_bounds = 8.5 / 10;
+    foreground_mountain_range.lower_bounds = 7.5 / 10;
+    foreground_mountain_range.change_divisor = 8;
+    foreground_mountain_range.bounds_divisor = 3;
+
+    buildMountainRange(background_mountain_range, WIDTH/75, HEIGHT * 2 / 3);
+    buildMountainRange(foreground_mountain_range, WIDTH/100, HEIGHT * 4 / 5);
+
+    let mountain_shift_rate = 0;
     (moveMountains = delayFn(() => {
+        let maybeNegative = 1;
+        if (Math.random() > .5) maybeNegative *= -1;
+        mountain_shift_rate += maybeNegative * Math.random();
+        if (mountain_shift_rate > 30) {
+            mountain_shift_rate -= Math.random() / 2;
+        }
+        if (mountain_shift_rate < 20) {
+            mountain_shift_rate += Math.random() / 2;
+        }
+
         drawMountainRange('background-mountain-canvas', background_mountain_range, '#555');
         drawMountainRange('foreground-mountain-canvas', foreground_mountain_range, '#444');
 
-        background_mountain_range = background_mountain_range.map((mountain, index) => {
-            let maybeNegative = 1;
-            if (Math.random() > .5) maybeNegative *= -1;
-            
-            mountain.changeRate += maybeNegative * Math.random();
-            if (mountain.changeRate < -10) {
-                mountain.changeRate = -10;
-            }
-            if (mountain.changeRate > 10) {
-                mountain.changeRate = 10;
-            }
-
-            mountain.y += mountain.changeRate / 6;
-
-            if (mountain.y > HEIGHT * 2.5 / 5) {
-                mountain.changeRate -= Math.random() / 2;
-            }
-            if (mountain.y < HEIGHT * 3.5 / 5) {
-                mountain.changeRate += Math.random() / 2;
-            }
-            return mountain;
-        });
-        foreground_mountain_range = foreground_mountain_range.map((mountain, index) => {
-            let maybeNegative = 1;
-            if (Math.random() > .5) maybeNegative *= -1;
-            
-            mountain.changeRate += maybeNegative * Math.random();
-            if (mountain.changeRate < -10) {
-                mountain.changeRate = -10;
-            }
-            if (mountain.changeRate > 10) {
-                mountain.changeRate = 10;
-            }
-
-            mountain.y += mountain.changeRate / 8;
-
-            if (mountain.y > HEIGHT * 8.5 / 10) {
-                mountain.changeRate -= Math.random() / 2;
-            }
-            if (mountain.y < HEIGHT * 7.5 / 10) {
-                mountain.changeRate += Math.random() / 2;
-            }
-            return mountain;
-        });
+        updateMountainRange(background_mountain_range, mountain_shift_rate/10);
+        updateMountainRange(foreground_mountain_range, mountain_shift_rate);
         moveMountains();
     }, 100))();
 
